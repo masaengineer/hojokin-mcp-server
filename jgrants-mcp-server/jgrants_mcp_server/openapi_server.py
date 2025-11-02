@@ -95,7 +95,10 @@ async def search_subsidies_api(
     キーワード、業種、地域、従業員数などで絞り込みが可能です。
     """
     try:
+        # リクエスト詳細をログに記録（デバッグ用）
         logger.info(f"search_subsidies_api called: keyword={keyword}, industry={industry}, target_area_search={target_area_search}")
+        logger.info(f"Request params - keyword type: {type(keyword)}, len: {len(keyword) if keyword else 0}")
+        logger.info(f"Request params - target_area_search type: {type(target_area_search)}, value: {target_area_search}")
         # バリデーション
         if not isinstance(keyword, str) or not keyword.strip() or not (2 <= len(keyword.strip()) <= 255):
             raise HTTPException(status_code=400, detail="keyword は2〜255文字の非空文字列で指定してください")
