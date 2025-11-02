@@ -151,7 +151,9 @@ async def get_subsidy_detail_api(subsidy_id: str):
             elif isinstance(data_result, dict):
                 result = data_result
             else:
-                raise HTTPException(status_code=500, detail="予期しないレスポンス形式")
+                # より詳細なエラーメッセージ
+                logger.error(f"予期しないレスポンス形式: result={result}, type={type(result)}")
+                raise HTTPException(status_code=500, detail=f"予期しないレスポンス形式: {type(data_result).__name__}")
         return result
     except HTTPException:
         raise
@@ -176,16 +178,19 @@ async def get_subsidy_overview_api(
         # デフォルトキーワードで検索して統計を計算
         subsidies = await _search_subsidies_internal()
         if "error" in subsidies:
-            raise HTTPException(status_code=500, detail=subsidies["error"])
+            raise HTTPException(status_code=500, detail=subsidies.get("error", "検索エラー"))
         
-        # 簡易的な統計情報を返す（完全な実装は省略）
+        # レスポンス形式を確認
+        if not isinstance(subsidies, dict):
+            raise HTTPException(status_code=500, detail="予期しないレスポンス形式: 辞書型ではありません")
+        
+        # 簡易的な統計情報を返す
         result = {
             "total_count": subsidies.get("total_count", 0),
+            "subsidies_count": len(subsidies.get("subsidies", [])),
             "output_format": output_format,
-            "note": "詳細な統計機能は準備中です"
+            "note": "詳細な統計機能は準備中です。現在は検索結果の件数のみを返します。"
         }
-        if isinstance(result, dict) and "error" in result:
-            raise HTTPException(status_code=400, detail=result["error"])
         return result
     except HTTPException:
         raise
