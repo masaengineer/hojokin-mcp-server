@@ -41,12 +41,6 @@ app = FastAPI(
 
 # CORS設定（GPTsからのアクセスを許可）
 app.add_middleware(
-
-            "detail": exc.errors(),
-            "body": body_str
-        }
-    )
-
     CORSMiddleware,
     allow_origins=["*"],  # GPTsからのアクセスを許可
     allow_credentials=True,
@@ -55,6 +49,19 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,  # プリフライトリクエストのキャッシュ時間
 )
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """バリデーションエラーの詳細を返す"""
+    logger.error(f"Validation error: {exc.errors()}")
+    body_str = exc.body.decode('utf-8', errors='ignore') if exc.body else None
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": body_str
+        }
+    )
+
 
 
 @app.get("/", tags=["Health"])
