@@ -124,6 +124,9 @@ async def search_subsidies_api(
         if isinstance(result, dict) and "error" in result:
             logger.error(f"Search returned error: {result['error']}")
             raise HTTPException(status_code=400, detail=result["error"])
+        
+        # レスポンス構造をログに記録
+        logger.info(f"Result type: {type(result)}, keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
         total_count = result.get('total_count', 0)
         subsidies_count = len(result.get('subsidies', []))
         import json

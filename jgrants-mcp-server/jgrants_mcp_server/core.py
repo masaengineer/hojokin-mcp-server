@@ -99,15 +99,21 @@ async def _search_subsidies_internal(
     
     data = await _get_json(url, params=params)
     if "error" in data:
+        logger.error(f"API returned error: {data.get('error')}")
         return data
 
     # レスポンスを整形
-    if "result" in data:
+    logger.info(f"API response keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
+    logger.info(f"API response has 'result': {'result' in data if isinstance(data, dict) else False}")
+    if isinstance(data, dict) and "result" in data:
+        result_count = len(data["result"]) if isinstance(data["result"], list) else 0
+        logger.info(f"API result count: {result_count}")
         return {
-            "total_count": len(data["result"]),
+            "total_count": result_count,
             "subsidies": data["result"],
             "search_conditions": {k: v for k, v in params.items() if k not in ["limit"]},
         }
+    logger.warning(f"API response does not contain 'result' key. Response: {str(data)[:500]}")
     return {"subsidies": [], "total_count": 0}
 
 
