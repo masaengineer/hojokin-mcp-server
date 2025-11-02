@@ -26,7 +26,10 @@ app = FastAPI(
     description="デジタル庁Jグランツ（補助金電子申請システム）の公開APIをラップしたREST API。GPTsのActions機能で使用可能。",
     version="1.0.0",
     servers=[
-        {"url": "http://localhost:8001", "description": "ローカル開発環境"},
+        {
+            "url": os.getenv("RENDER_EXTERNAL_URL", os.getenv("SERVER_URL", "http://localhost:8001")),
+            "description": "本番環境" if os.getenv("RENDER_EXTERNAL_URL") else ("開発環境 (ngrok)" if os.getenv("SERVER_URL") else "ローカル開発環境")
+        },
     ],
 )
 
