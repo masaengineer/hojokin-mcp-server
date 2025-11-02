@@ -8,8 +8,9 @@ import sys
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 # ロガー設定
@@ -40,6 +41,12 @@ app = FastAPI(
 
 # CORS設定（GPTsからのアクセスを許可）
 app.add_middleware(
+
+            "detail": exc.errors(),
+            "body": body_str
+        }
+    )
+
     CORSMiddleware,
     allow_origins=["*"],  # GPTsからのアクセスを許可
     allow_credentials=True,
