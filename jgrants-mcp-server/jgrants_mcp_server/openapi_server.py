@@ -175,23 +175,38 @@ async def get_subsidy_overview_api(
     締切期間別、金額規模別の集計を提供します。
     """
     try:
+        logger.info("get_subsidy_overview_api called with output_format=%s", output_format)
+        
         # デフォルトキーワードで検索して統計を計算
-        subsidies = await _search_subsidies_internal()
+        try:
+            subsidies = await _search_subsidies_internal()
+            logger.info("_search_subsidies_internal returned: type=%s, keys=%s", type(subsidies).__name__, list(subsidies.keys()) if isinstance(subsidies, dict) else "N/A")
+        except Exception as e:
+            logger.error("Error calling _search_subsidies_internal: %s", str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail=f"検索API呼び出しエラー: {str(e)}")
+        
         if "error" in subsidies:
+            logger.error("Search returned error: %s", subsidies.get("error"))
             raise HTTPException(status_code=500, detail=subsidies.get("error", "検索エラー"))
         
         # レスポンス形式を確認
         if not isinstance(subsidies, dict):
-            raise HTTPException(status_code=500, detail="予期しないレスポンス形式: 辞書型ではありません")
+            logger.error("Unexpected response type: %s, value=%s", type(subsidies).__name__, str(subsidies)[:200])
+            raise HTTPException(status_code=500, detail=f"予期しないレスポンス形式: 辞書型ではありません (type: {type(subsidies).__name__})")
         
         # 簡易的な統計情報を返す
-        result = {
-            "total_count": subsidies.get("total_count", 0),
-            "subsidies_count": len(subsidies.get("subsidies", [])),
-            "output_format": output_format,
-            "note": "詳細な統計機能は準備中です。現在は検索結果の件数のみを返します。"
-        }
-        return result
+        try:
+            result = {
+                "total_count": subsidies.get("total_count", 0),
+                "subsidies_count": len(subsidies.get("subsidies", [])),
+                "output_format": output_format,
+                "note": "詳細な統計機能は準備中です。現在は検索結果の件数のみを返します。"
+            }
+            logger.info("Returning result: %s", result)
+            return result
+        except Exception as e:
+            logger.error("Error creating result: %s", str(e), exc_info=True)
+            raise HTTPException(status_code=500, detail=f"結果生成エラー: {str(e)}")
     except HTTPException:
         raise
     except Exception as e:
