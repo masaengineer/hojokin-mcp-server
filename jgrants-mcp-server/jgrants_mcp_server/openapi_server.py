@@ -252,6 +252,58 @@ async def get_file_content_api(
         raise HTTPException(status_code=500, detail=error_detail)
 
 
+
+@app.get("/prompts/{prompt_name}", tags=["Prompts"])
+async def get_prompt_api(prompt_name: str):
+    """
+    プロンプトの内容を取得します。
+    
+    - **prompt_name**: プロンプト名（例: subsidy_search_guide, api_usage_agreement）
+    """
+    try:
+        # プロンプト関数をインポートして実行
+        if prompt_name == "subsidy_search_guide":
+            from jgrants_mcp_server.core import subsidy_search_guide
+            prompt_content = await subsidy_search_guide()
+            return {
+                "prompt_name": prompt_name,
+                "content": prompt_content
+            }
+        elif prompt_name == "api_usage_agreement":
+            from jgrants_mcp_server.core import api_usage_agreement
+            prompt_content = await api_usage_agreement()
+            return {
+                "prompt_name": prompt_name,
+                "content": prompt_content
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"プロンプト '{prompt_name}' が見つかりません")
+    except ImportError as e:
+        logger.error(f"Import error: {e}")
+        raise HTTPException(status_code=500, detail=f"プロンプトの読み込みエラー: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error getting prompt: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"プロンプト取得エラー: {str(e)}")
+
+
+@app.get("/prompts", tags=["Prompts"])
+async def list_prompts_api():
+    """
+    利用可能なプロンプトの一覧を取得します。
+    """
+    return {
+        "prompts": [
+            {
+                "name": "subsidy_search_guide",
+                "description": "補助金検索のガイドとベストプラクティス"
+            },
+            {
+                "name": "api_usage_agreement",
+                "description": "jGrants API利用に関する同意事項"
+            }
+        ]
+    }
+
 @app.get("/ping", tags=["Health"])
 async def ping():
     """サーバーの疎通確認を行います。"""
