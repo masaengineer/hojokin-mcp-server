@@ -52,7 +52,12 @@ app.add_middleware(
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """バリデーションエラーの詳細を返す"""
     logger.error(f"Validation error: {exc.errors()}")
-    body_str = exc.body.decode('utf-8', errors='ignore') if exc.body else None
+    logger.error(f"Request URL: {request.url}")
+    logger.error(f"Request method: {request.method}")
+    try:
+        body_str = exc.body.decode('utf-8', errors='ignore') if exc.body else None
+    except:
+        body_str = None
     return JSONResponse(
         status_code=422,
         content={
@@ -90,6 +95,7 @@ async def search_subsidies_api(
     キーワード、業種、地域、従業員数などで絞り込みが可能です。
     """
     try:
+        logger.info(f"search_subsidies_api called: keyword={keyword}, industry={industry}, target_area_search={target_area_search}")
         # バリデーション
         if not isinstance(keyword, str) or not keyword.strip() or not (2 <= len(keyword.strip()) <= 255):
             raise HTTPException(status_code=400, detail="keyword は2〜255文字の非空文字列で指定してください")
@@ -113,7 +119,9 @@ async def search_subsidies_api(
         )
         # エラーオブジェクトが返された場合はHTTPExceptionを発生
         if isinstance(result, dict) and "error" in result:
+            logger.error(f"Search returned error: {result['error']}")
             raise HTTPException(status_code=400, detail=result["error"])
+        logger.info(f"Search successful: total_count={result.get('total_count', 0)}")
         return result
     except HTTPException:
         raise
