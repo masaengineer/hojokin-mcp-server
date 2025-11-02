@@ -5,11 +5,16 @@ GPTsのActions機能で使用するためのOpenAPI仕様を提供します。
 
 import os
 import sys
+import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+
+# ロガー設定
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # プロジェクトルートをパスに追加
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -36,10 +41,12 @@ app = FastAPI(
 # CORS設定（GPTsからのアクセスを許可）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # GPTsからのアクセスを許可
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # プリフライトリクエストのキャッシュ時間
 )
 
 
@@ -80,9 +87,18 @@ async def search_subsidies_api(
             order=order,
             acceptance=acceptance
         )
+        # エラーオブジェクトが返された場合はHTTPExceptionを発生
+        if isinstance(result, dict) and "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"検索エラー: {str(e)}")
+        import traceback
+        error_detail = f"検索エラー: {str(e)}"
+        print(f"ERROR: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @app.get("/subsidies/{subsidy_id}", tags=["補助金詳細"])
@@ -94,9 +110,17 @@ async def get_subsidy_detail_api(subsidy_id: str):
     """
     try:
         result = await get_subsidy_detail(subsidy_id=subsidy_id)
+        if isinstance(result, dict) and "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"詳細取得エラー: {str(e)}")
+        import traceback
+        error_detail = f"詳細取得エラー: {str(e)}"
+        print(f"ERROR: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @app.get("/subsidies/overview", tags=["統計情報"])
@@ -110,9 +134,17 @@ async def get_subsidy_overview_api(
     """
     try:
         result = await get_subsidy_overview(output_format=output_format)
+        if isinstance(result, dict) and "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"統計情報取得エラー: {str(e)}")
+        import traceback
+        error_detail = f"統計情報取得エラー: {str(e)}"
+        print(f"ERROR: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @app.get("/subsidies/{subsidy_id}/files/{filename}", tags=["ファイル内容"])
@@ -132,9 +164,17 @@ async def get_file_content_api(
             filename=filename,
             return_format=return_format
         )
+        if isinstance(result, dict) and "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ファイル取得エラー: {str(e)}")
+        import traceback
+        error_detail = f"ファイル取得エラー: {str(e)}"
+        print(f"ERROR: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @app.get("/ping", tags=["Health"])
