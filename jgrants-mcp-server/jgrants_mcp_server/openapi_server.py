@@ -124,7 +124,11 @@ async def search_subsidies_api(
         if isinstance(result, dict) and "error" in result:
             logger.error(f"Search returned error: {result['error']}")
             raise HTTPException(status_code=400, detail=result["error"])
-        logger.info(f"Search successful: total_count={result.get('total_count', 0)}")
+        total_count = result.get('total_count', 0)
+        subsidies_count = len(result.get('subsidies', []))
+        import json
+        response_size = len(json.dumps(result, ensure_ascii=False))
+        logger.info(f"Search successful: total_count={total_count}, subsidies_count={subsidies_count}, response_size={response_size} bytes")
         return result
     except HTTPException:
         raise
